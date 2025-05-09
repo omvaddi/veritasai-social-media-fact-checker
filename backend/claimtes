@@ -1,0 +1,13 @@
+from transformers import pipeline
+
+texts = [
+    "We're going to do campaign travel in the future"
+]
+
+checkpoint = "Sami92/XLM-R-Large-ClaimDetection"
+tokenizer_kwargs = {'padding':True, 'truncation':True, 'max_length':512}
+claimdetection = pipeline("text-classification", model = checkpoint, tokenizer=checkpoint, **tokenizer_kwargs)
+
+result = claimdetection(texts)
+
+print(result)

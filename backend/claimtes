@@ -1,7 +1,11 @@
 from transformers import pipeline
 
 texts = [
-    "We're going to do campaign travel in the future"
+    "Are Jewish students being protected or used?",
+    "In response to a spike in anti-Semitism on campus, the Trump administration launched a harsh crackdown, you know, defunding universities accused of failing to address anti-Semitism, and even arresting and deporting Fordham students accused of supporting Hamas.",
+    "Many Jewish leaders and organizations welcome the strong steps taken to protect Jewish students, but some Jewish students and organizations are actually pushing back against a harsh crackdown, warning that a harsh crackdown may be doing more harm than good, targeting bridge builders rather than just extremists, cutting funds that also benefit Jewish students, and establishing legal tools that could one day target Jews.",
+    "And then there's the question that blows it all wide open.",
+    "Is Trump just using anti-Semitism as a cover to advance a culture war against progressives?"
 ]
 
 checkpoint = "Sami92/XLM-R-Large-ClaimDetection"

@@ -1,0 +1,27 @@
+from sentence_transformers import SentenceTransformer, util
+from sklearn.cluster import AgglomerativeClustering
+import spacy
+
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+nlp = spacy.load("en_core_web_sm")
+
+text = "Donald Trump increased his tarrifs. The tarrifs ruined the economy. Mr. Jones is good."
+doc = nlp(text)
+
+sentences = [sent.text for sent in doc.sents]
+print(sentences)
+
+embeddings = model.encode(sentences)
+
+clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.5, metric='cosine', linkage='average')
+
+labels = clustering.fit_predict(embeddings)
+clusters = {}
+
+for sentence, label in zip(sentences, labels):
+    clusters.setdefault(label, []).append(sentence)
+
+print(list(clusters.values()))
+

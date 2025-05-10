@@ -5,9 +5,9 @@ from openai import OpenAI
 from transformers import pipeline
 from fastcoref import spacy_component
 import spacy
+from sentence_transformers import SentenceTransformer, util
+from sklearn.cluster import AgglomerativeClustering
 
-
-OpenAI.api_key = "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"
 
 tmpdir = tempfile.mkdtemp()
 
@@ -33,7 +33,7 @@ def transcribe(mp3_path: str) -> str:
 
     with open(mp3_path, "rb") as audio_file:
         transcription = client.audio.transcriptions.create(
-            model="gpt-4o-transcribe",
+            model="whisper-1",
             file=audio_file,
             language="en"
         )
@@ -53,13 +53,75 @@ def coref(transcription: str) -> str:
     )
 
     return(doc._.resolved_text)
+
+def splitSentences(coref: str) -> str:
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(coref)
+    sentences = [sent.text for sent in doc.sents]
+    return sentences
+
+def detectClaims(corefSentences: str) -> list:
+
+    checkpoint = "Sami92/XLM-R-Large-ClaimDetection"
+    tokenizer_kwargs = {'padding':True, 'truncation':True, 'max_length':512}
+    claimdetection = pipeline("text-classification", model = checkpoint, tokenizer=checkpoint, **tokenizer_kwargs)
+
+    claims = []
+
+    for s in corefSentences:
+        sentenceResult = claimdetection(s)
+        if sentenceResult[0]['label'] == 'factual':
+            print(sentenceResult)
+            claims.append(s)
+
+
         
+
+
+    return claims
+
+    
+
+def cluster(claims: list) -> list:
+
+    if len(claims) == 1:
+        return [claims]
+        
+
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+
+    embeddings = model.encode(claims)
+
+    clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.3, metric='cosine', linkage='average')
+
+    labels = clustering.fit_predict(embeddings)
+    clusters = {}
+
+    for claim, label in zip(claims, labels):
+        clusters.setdefault(label, []).append(claim)
+
+    return list(clusters.values())
+
+
 if __name__ == "__main__":
-    test_url = "https://www.youtube.com/shorts/RT3GI1vEAdc"
+    test_url = "https://www.youtube.com/shorts/wl9_C_yRLT4"
 
     mp3_path = download_audio(test_url)
     transcription = transcribe(mp3_path) 
     coref_ = coref(transcription)
-    print(transcription)
-    print(coref_)
+    corefSentences = splitSentences(coref_)
+    claims = detectClaims(corefSentences)
+    
+    print(corefSentences)
+
+    print("\n")
+    print(claims)
+
+    # clusters = cluster(claims)
+    print("\n")
+
+    # print(clusters)
+
     os.remove(mp3_path)

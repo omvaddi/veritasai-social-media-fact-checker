@@ -7,9 +7,14 @@ from fastcoref import spacy_component
 import spacy
 from sentence_transformers import SentenceTransformer, util
 from sklearn.cluster import AgglomerativeClustering
+import hdbscan
+import warnings
 
+warnings.filterwarnings("ignore", category = FutureWarning)
 
 tmpdir = tempfile.mkdtemp()
+nlp = spacy.load("en_core_web_sm")
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def download_audio(url: str) -> str:
     ydl_opts = {
@@ -28,6 +33,8 @@ def download_audio(url: str) -> str:
         mp3_path = os.path.splitext(downloaded_path)[0]+'.mp3'
         return mp3_path
         
+
+
 def transcribe(mp3_path: str) -> str:
     client = OpenAI()
 
@@ -41,7 +48,6 @@ def transcribe(mp3_path: str) -> str:
         return transcription.text
     
 def coref(transcription: str) -> str:
-    nlp = spacy.load("en_core_web_sm")
     nlp.add_pipe(
         "fastcoref", 
         config={'model_architecture': 'LingMessCoref', 'model_path': 'biu-nlp/lingmess-coref', 'device': 'cpu'}
@@ -55,10 +61,9 @@ def coref(transcription: str) -> str:
     return(doc._.resolved_text)
 
 def splitSentences(coref: str) -> str:
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    nlp = spacy.load("en_core_web_sm")
     doc = nlp(coref)
-    sentences = [sent.text for sent in doc.sents]
+    sentences = [sent.text.lower() for sent in doc.sents]
+    
     return sentences
 
 def detectClaims(corefSentences: str) -> list:
@@ -75,10 +80,6 @@ def detectClaims(corefSentences: str) -> list:
             print(sentenceResult)
             claims.append(s)
 
-
-        
-
-
     return claims
 
     
@@ -87,41 +88,45 @@ def cluster(claims: list) -> list:
 
     if len(claims) == 1:
         return [claims]
-        
-
-    model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
     embeddings = model.encode(claims)
 
-    clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.3, metric='cosine', linkage='average')
+    clustering = hdbscan.HDBSCAN(min_cluster_size=2, metric = 'euclidean')
+
+
 
     labels = clustering.fit_predict(embeddings)
     clusters = {}
 
     for claim, label in zip(claims, labels):
+        if label == -1:
+            continue
         clusters.setdefault(label, []).append(claim)
+    
+
 
     return list(clusters.values())
 
 
 if __name__ == "__main__":
-    test_url = "https://www.youtube.com/shorts/wl9_C_yRLT4"
+    test_url = "https://www.instagram.com/reel/DF9HjexvbDM/?igsh=MTViNG5zdmF0YnJ3bA%3D%3D"
 
     mp3_path = download_audio(test_url)
     transcription = transcribe(mp3_path) 
     coref_ = coref(transcription)
     corefSentences = splitSentences(coref_)
-    claims = detectClaims(corefSentences)
+    # claims = detectClaims(corefSentences)
     
     print(corefSentences)
 
     print("\n")
-    print(claims)
+    # print(claims)
 
-    # clusters = cluster(claims)
-    print("\n")
+    clusters = cluster(corefSentences)
+    print("\n") 
 
-    # print(clusters)
+    print(clusters)
+
 
     os.remove(mp3_path)

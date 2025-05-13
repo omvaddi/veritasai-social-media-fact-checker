@@ -1,0 +1,39 @@
+import requests
+import json 
+
+api_key = "4ed53236c2184416abc1e457a84c3610"
+input_claim =  ['Florida has an established process for certain situations.', 
+                "Raising tariffs will lead to a rise in grocery store prices.", 
+                "Guys, I promise Guys, Guys are still heterosexual if Guys care about Guys's skin.",
+                'Still got scarring, but for the most part, I am cleared up.', 'Number one, Accutane.',
+                'If you get one or two pimples, do not take Accutane.', 'Accutane destroys your body.',
+                'But if you have severe acne, in my opinion, Accutane is the only medication that works.',
+                'No serum, moisturizer, or face mask is gonna mimic the effects of Accutane.', 
+                'Just remember, the first one or two months, you purge out insane, so just deal with that.',
+                "And if you plan on getting pregnant anytime soon, don't take Accutane as well.", 
+                "I don't know why you'd be getting pregnant, but I mean, shit, if you're getting pregnant, good for you.",
+                'Number two, you gotta cut out the added sugars.', 
+                'Look at these eyes.', 
+                'these eyes like to drink boba, but guess what?', 
+                "I don't really do boba as much anymore, or when I do, I get 0% sugar.", 
+                'To suppress 0% sugar, I drink shit like kombucha.', 
+                'I promise Guys, kombucha tastes like dick at first, but after a while, you get used to kombucha and you like kombucha.',
+                'kombucha is also good for your gut health, okay?', 'Guys, I promise you, you are still heterosexual if you drink kombucha.',
+                'I know this might hurt a lot of people, but stop getting shit like frat pastes, lattes, manchas, and hella sugar.', 
+                'Instead, get Americanos.', 
+                'You gotta cut out the oily food like chips.',
+                "In my opinion, Insta-ramen, Insta-ramen doesn't help as well.",
+                'Listen, I love fried chicken, okay?', 
+                "You could lock me in a room with Korean fried chicken and I'd come out looking like I just killed somebody, but Korean fried chicken is too oily, so I have to give Korean fried chicken up.",                    'Even at restaurants, it pains me to say, but when they ask me, do you want fries or a salad?',
+                'I say salad.', 
+                "Yeah, I'm one of those now.",
+                "To my young guys out there, start caring about my young guys out there's gut health, start caring about my young guys out there's hygiene.", 
+                'I promise my young guys out there, my young guys out there still look vagina if my young guys out there do.']
+
+for c in input_claim:
+    api_endpoint = f"https://idir.uta.edu/claimbuster/api/v2/score/text/{c}"
+    request_headers = {"x-api-key": api_key}
+    api_response = requests.get(url=api_endpoint, headers = request_headers)
+    print(api_response.json())
+          
+print()

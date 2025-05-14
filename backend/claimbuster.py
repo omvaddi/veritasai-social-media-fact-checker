@@ -1,7 +1,12 @@
 import requests
 import json 
+from dotenv import load_dotenv
+import os
 
-api_key = "4ed53236c2184416abc1e457a84c3610"
+load_dotenv()
+api_key = os.getenv("CLAIMBUSTER_API_KEY")
+
+print(api_key)
 input_claim =  ['Florida has an established process for certain situations.', 
                 "Raising tariffs will lead to a rise in grocery store prices.", 
                 "Guys, I promise Guys, Guys are still heterosexual if Guys care about Guys's skin.",

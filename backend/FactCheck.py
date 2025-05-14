@@ -110,7 +110,7 @@ def cluster(claims: list) -> list:
 
 
 if __name__ == "__main__":
-    test_url = "https://www.instagram.com/reel/DF9HjexvbDM/?igsh=MTViNG5zdmF0YnJ3bA%3D%3D"
+    test_url = "https://www.instagram.com/reel/DF9HjexvbDM/?igsh=MTViNG5zdmF0YnJ3bA=="
 
     mp3_path = download_audio(test_url)
     transcription = transcribe(mp3_path) 

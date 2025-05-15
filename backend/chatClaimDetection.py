@@ -3,7 +3,7 @@ client = OpenAI()
 import json
 
 
-clusters = [['i have dealt with acne since i was in sixth grade.', 'still got scarring, but for the most part, i am cleared up.', 'number one, accutane.', 'if you get one or two pimples, do not take accutane.', 'accutane destroys your body.', 'but if you have severe acne, in my opinion, accutane is the only medication that works.', 'no serum, moisturizer, or face mask is gonna mimic the effects of accutane.', "and if you plan on getting pregnant anytime soon, don't take accutane as well."], ["guys, i promise guys, guys are still heterosexual if guys care about guys's skin.", "i don't know why you'd be getting pregnant, but i mean, shit, if you're getting pregnant, good for you.", 'number two, you gotta cut out the added sugars.', 'these eyes like to drink boba, but guess what?', "i don't really do boba as much anymore, or when i do, i get 0% sugar.", 'to suppress 0% sugar, i drink shit like kombucha.', 'i promise guys, kombucha tastes like dick at first, but after a while, you get used to kombucha and you like kombucha.', 'kombucha is also good for your gut health, okay?', 'guys, i promise you, you are still heterosexual if you drink kombucha.', 'i know this might hurt a lot of people, but stop getting shit like frat pastes, lattes, manchas, and hella sugar.', 'you gotta cut out the oily food like chips.', "in my opinion, insta-ramen, insta-ramen doesn't help as well.", 'listen, i love fried chicken, okay?', "you could lock me in a room with korean fried chicken and i'd come out looking like i just killed somebody, but korean fried chicken is too oily, so i have to give korean fried chicken up.", 'even at restaurants, it pains me to say, but when they ask me, do you want fries or a salad?', 'i say salad.', 'i promise my young guys out there, my young guys out there still look vagina if my young guys out there do.']]
+clusters = [['what is a woman and why is it important that we understand the difference between men and women?', "well, it's sort of easy to answer for me because a woman is somebody that can have a baby under certain circumstances.", 'a woman can, a woman has a quality.', "a woman is a person who's much smarter than a man i've always found.", "a woman is a person that doesn't give a man even a chance of success.", "and a woman's a person that in many cases has been treated very badly because i think that what happens with this crazy, this crazy issue of men being able to play in women's sports is just ridiculous and very unfair to women and very demeaning to women.", "women are basically incredible people, do so much for our country and we love, we love our women and we're going to take care of our women."]]
 
 groupClusters = [""] * len(clusters)
 
@@ -32,10 +32,12 @@ Return the result in this JSON format:
     "theme": "Short theme",
     "claims": [
     {
-        "Claim 1": Claim 1
+        "id": 1,
+        "text": claim 1
     } 
     {
-        "Claim 2": Claim 2
+        "id": 2,
+        "text": claim 2
     }
     {
         etc...
@@ -61,15 +63,19 @@ for i in range(len(groupClusters)):
     
         input= prompt_template % (text, groupClusters[i])
     )
+    totalJSONStr += response.output_text
 
-    totalJSONStr += response.output_text + "\n"
+    if i != len(groupClusters) - 1:
+        totalJSONStr += ","
+    totalJSONStr += "\n"
+
     
-totalJSONStr += "},"
+totalJSONStr += "}"
 
 print(totalJSONStr)
 
-# jsonData = json.loads(totalJSONStr)
-# print(jsonData)
+jsonData = json.loads(totalJSONStr)
+print(jsonData['Topic #1'])
 
 
 

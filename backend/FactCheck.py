@@ -66,22 +66,6 @@ def splitSentences(coref: str) -> str:
     
     return sentences
 
-def detectClaims(corefSentences: str) -> list:
-
-    checkpoint = "Sami92/XLM-R-Large-ClaimDetection"
-    tokenizer_kwargs = {'padding':True, 'truncation':True, 'max_length':512}
-    claimdetection = pipeline("text-classification", model = checkpoint, tokenizer=checkpoint, **tokenizer_kwargs)
-
-    claims = []
-
-    for s in corefSentences:
-        sentenceResult = claimdetection(s)
-        if sentenceResult[0]['label'] == 'factual':
-            print(sentenceResult)
-            claims.append(s)
-
-    return claims
-
     
 
 def cluster(claims: list) -> list:
@@ -99,6 +83,9 @@ def cluster(claims: list) -> list:
     labels = clustering.fit_predict(embeddings)
     clusters = {}
 
+    if not any(label != -1 for label in labels):
+        return [claims]
+
     for claim, label in zip(claims, labels):
         if label == -1:
             continue
@@ -110,21 +97,14 @@ def cluster(claims: list) -> list:
 
 
 if __name__ == "__main__":
-    test_url = "https://www.instagram.com/reel/DF9HjexvbDM/?igsh=MTViNG5zdmF0YnJ3bA=="
+    test_url = "https://www.youtube.com/shorts/orwThpmR2EY"
 
     mp3_path = download_audio(test_url)
     transcription = transcribe(mp3_path) 
     coref_ = coref(transcription)
     corefSentences = splitSentences(coref_)
-    # claims = detectClaims(corefSentences)
-    
-    print(corefSentences)
-
-    print("\n")
-    # print(claims)
-
     clusters = cluster(corefSentences)
-    print("\n") 
+
 
     print(clusters)
 

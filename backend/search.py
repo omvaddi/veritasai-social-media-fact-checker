@@ -11,12 +11,24 @@ JSONStr = """
     "theme": "Definitions and perceptions of women, gender differences, and women's roles in society and sports",
     "claims": [
         {
-            "id": 1,
-            "text": "a woman is somebody that can have a baby under certain circumstances"
+            "id": 1, "text": "a woman is somebody that can have a baby under certain circumstances"
         },
         {
             "id": 2,
             "text": "men being able to play in women's sports is unfair to women"
+        }
+    ]
+},
+"Topic #2":
+{
+    "theme": "Le",
+    "claims": [
+        {
+            "id": 1, "text": "7 people died during 9/11"
+        },
+        {
+            "id": 2,
+            "text": "9/11 occured in 2001"
         }
     ]
 }
@@ -34,26 +46,14 @@ url = 'https://www.googleapis.com/customsearch/v1'
 
 client = OpenAI()
 
-prompt_template = """You are helping build a fact checking website.
+system_prompt = """You are helping build a fact checking website.
 You will be provided a claim along with google search results for that claim.
 Your job is to decide whether the search results support or reject the claim.
 The search results will be given in a json format as follows:
 [
-    {
-    "Article #": 1
-    "title": Title of article #1
-    "link": Link to article #1
-    "snippet": Snipped of article #1
-    },
-    {
-    "Article #": 2
-    "title": Title of article #2
-    "link": Link to article #2
-    "snippet": Snipped of article #2
-    },
-    {
-    etc...
-    }
+    { "Article #": 1, "title": Title of article #1, "link": Link to article #1, "snippet": Snippet of article #1 },
+    { "Article #": 2, "title": Title of article #2, "link": Link to article #2, "snippet": Snippet of article #2 },
+    { etc... }
 ]
 
 Only base your answer on the information provided. Do not use any external or prior knowledge.
@@ -66,12 +66,14 @@ Return the result in this JSON format:
     "links": [
         "https://example.com/article1",
         "https://example.com/article2"
-    ]
+    ] // Use links that support the verdict. Output no more than three links.
 }
+"""
 
+user_prompt = """
 Here is the claim: %s
 
-Here is the search: %s 
+Here are the search results: %s 
 """
 
 
@@ -104,13 +106,16 @@ for topic_key in data.keys():
 
         evStr = json.dumps(evidence, indent = 2)
 
-        response = client.responses.create(
+        response = client.chat.completions.create(
             model="gpt-4.1",
-        
-            input= prompt_template % (search_query, evStr)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt  % (search_query, evStr)}
+            ],
+            response_format = {"type" : "json_object"}
         )
 
-        evInterpJSON = response.output_text
+        evInterpJSON = response.choices[0].message.content
 
         evInterp = json.loads(evInterpJSON)
 

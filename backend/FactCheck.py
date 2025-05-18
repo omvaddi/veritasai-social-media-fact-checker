@@ -8,12 +8,13 @@ import spacy
 from sentence_transformers import SentenceTransformer, util
 from sklearn.cluster import AgglomerativeClustering
 import hdbscan
-import warnings
 import requests
 from dotenv import load_dotenv
 import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-warnings.filterwarnings("ignore", category = FutureWarning)
+load_dotenv()
 
 tmpdir = tempfile.mkdtemp()
 nlp = spacy.load("en_core_web_sm")
@@ -36,10 +37,10 @@ def download_audio(url: str) -> str:
         return downloaded_path
 
 
-def transcribe(mp3_path: str) -> str:
+def transcribe(path: str) -> str:
     client = OpenAI()
 
-    with open(mp3_path, "rb") as audio_file:
+    with open(path, "rb") as audio_file:
         transcription = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
@@ -117,11 +118,15 @@ def detectClaims(clusters: list) -> dict:
 
     For the sentence(s) provided, do the following:
     1. Identify a **main theme**.
-    2. Extract any **fact-checkable claims** -- things that can be verified through trusted sources or a google search. 
-    3. Do not include anything the speaker says about their personal lives unless they are a public figure and their claims can be fact checked. 
-    5. Be aware some claims may be hyperbolic so rephrase them into balanced claims (ex: you need to cut out sugars for clear skin -> cutting out sugar helps with clear skin).
-    4. Ignore all vague, subjective, opinion-based, and non-factual content. It is OK if no claims are found.
-
+    2. Extract any **claims that are verifiable by external sources** (e.g., studies, laws, statistics, expert consensus).
+    3. Ignore: 
+        - Subjective opinions (e.g., what someone feels, prefers, or things is fair).
+        - Vague statements or advise without testable content.
+        - Personal anecdotes or private experiences unless it's a public figure making them. 
+    4. No claim should be just a rephrasal of a previous claim.
+    5. If a claim is exxagerated, rephrase is into a neutral, fact-checkable version.
+    6. Only include topics that contain at least one claim. Do not include any topic key if its "claims" list is empty.
+    
     Return the result in this JSON format:
     {
         "theme": "Short theme",
@@ -167,7 +172,6 @@ def detectClaims(clusters: list) -> dict:
     return JSON
 
 def searchAndAnalyzeEvidence(JSON: dict) -> dict:
-    load_dotenv()
     googlecloud_api_key = os.getenv("GOOGLECLOUD_API_KEY")
     search_engine_id = os.getenv("SEARCH_ENGINE_ID")
 
@@ -175,9 +179,12 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
     client = OpenAI()
 
-    system_prompt = """You are helping build a fact checking website.
-    You will be provided a claim along with google search results for that claim.
-    Your job is to decide whether the search results support or reject the claim.
+    system_prompt = """
+    You are an AI helping build a fact-checking tool.
+    You will be given:
+        - A claim
+        - A list of Google search result snippets in JSON format
+
     The search results will be given in a json format as follows:
     [
         { "Article #": 1, "title": Title of article #1, "link": Link to article #1, "snippet": Snippet of article #1 },
@@ -185,17 +192,21 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
         { etc... }
     ]
 
-    Only base your answer on the information provided. Do not use any external or prior knowledge.
-    In your explanation do not reference that you have looked at articles just quote specific ones if needed.
-    Make it seem as though you have an answer and are not looking at snippets.
+    Your job:
+    1. Analyze whether the **claim is supported or contradicted** by the snippets.
+    2. Make a decision based **only on the evidence provided** (do not guess beyond it).
+    3. If some evidence clearly supports or refutes the claim, say so.
+    4. If snippets do not provide enough relevent or clear evidence, choose "Indecisive".
+
+
     Return the result in this JSON format:
     {
-        "verdict": "True" | "False" | "Indecisive", // output indecisive if the claim is an opinion (ex: makes comments on what is fair or just) or there is not enough evidence.
-        "explanation": "A brief explanation of your reasoning.",
+        "verdict": "True" | "Likely True" | "Likely False" | "False" | "Indecisive" | True (Outdated), // try not to output indecisive but do it if the claim is an opinion (ex: makes comments on what is fair or just) or there is not enough evidence.
+        "explanation": "A brief explanation of your reasoning. Try to use quotes and refer to sources by their name mentioning them. Do not mention the fact you are reading from sources/snippets/searches just say things as facts. Additionally if there is no relevent evidence simply say that.",
         "links": [
             "https://example.com/article1",
             "https://example.com/article2"
-        ] // Use links that support the verdict. Output no more than three links.
+        ] // Use links are related to the verdict even if it is indecisive. Try to output 3 links, it is OK to output less.
     }
     """
 
@@ -262,23 +273,29 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     return JSON
 
 
-
-
-
-
-if __name__ == "__main__":
-    test_url = "https://www.instagram.com/reel/DF9HjexvbDM/?igsh=MTViNG5zdmF0YnJ3bA=="
-
-    mp3_path = download_audio(test_url)
-    transcription = transcribe(mp3_path) 
+def factChecker(link: str) -> dict:
+    path = download_audio(link)
+    transcription = transcribe(path) 
     coref_ = coref(transcription)
     corefSentences = splitSentences(coref_)
     clusters = cluster(corefSentences)
     claims = detectClaims(clusters)
-
     verdict = searchAndAnalyzeEvidence(claims)
     print(json.dumps(verdict, indent = 4))
+    os.remove(path)
+    return verdict
 
 
+app = Flask(__name__)
+CORS(app)
 
-    os.remove(mp3_path)
+@app.route("/", methods=['POST'])
+def fact_check():
+    data = request.get_json()
+    link = data.get("video_url")
+    result = factChecker(link)
+    return jsonify(result)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

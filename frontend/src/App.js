@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import './App.css';
 
 
-
-
-
 function FactCheck() {
   const [videoURL, setVideoUrl] = useState("");
   const [result, setResult] = useState(null);
@@ -52,7 +49,7 @@ function FactCheck() {
     }
   }
 
-  const useDummy = true;
+  const useDummy = false;
 
 
   const handleSubmit = async (e) => {
@@ -78,27 +75,28 @@ function FactCheck() {
   }
 
   return (
-    <div style = {{ padding: "2rem", fontFamily: "Arial"}} >
-      <h1>Social Media Video Fact Checker</h1>
-      <form onSubmit={handleSubmit} className="search">
-        <input
-          class="search-input"
-          type="text"
-          placeholder="Enter a social media video URL"
-          value={videoURL}
-          onChange={(e) => setVideoUrl(e.target.value)}
-        />
-      </form>
+    <div style = {{ padding: "2rem", fontFamily: 'Lexend'}} >
+      <h1>ClipCheck</h1>
+      
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "2rem"}}>
+        <form onSubmit={handleSubmit} className="search">
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Enter a social media video URL"
+            value={videoURL}
+            onChange={(e) => setVideoUrl(e.target.value)}
+          />
+        </form>
+      </div>
 
       {result && (
-        <div>
-        <ul>
+        <div className="results">   
           { Object.entries(result).map(([key, topic], i) => (
-            <li key={i} className="topic">
+            <div className="topic-card" key={i}>
               <h2> {topic.theme} </h2>
-              <ul>
                 {topic.claims.map((claim, j) => (
-                  <li key={j} className="claim">
+                  <div key={j} className="claim">
                     <p><strong>Claim:</strong> {claim.text}</p>
                     <p><strong>Verdict:</strong> {claim.verdict}</p>
                     <p><strong>Explanation:</strong> {claim.explanation}</p>
@@ -110,12 +108,11 @@ function FactCheck() {
                         </a>
                       ))}
                     </p>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            </li>
+              
+            </div>
           ))}
-        </ul>
         </div>
       )
     }

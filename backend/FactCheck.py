@@ -20,6 +20,8 @@ tmpdir = tempfile.mkdtemp()
 nlp = spacy.load("en_core_web_sm")
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
+cache = {}
+
 nlp.add_pipe(
     "fastcoref", 
     config={'model_architecture': 'LingMessCoref', 'model_path': 'biu-nlp/lingmess-coref', 'device': 'cpu'}
@@ -50,8 +52,6 @@ def transcribe(path: str) -> str:
         return transcription.text
     
 def coref(transcription: str) -> str:
-
-
     doc = nlp(
         transcription,
         component_cfg={"fastcoref": {'resolve_text': True}}
@@ -69,10 +69,8 @@ def splitSentences(coref: str) -> str:
 
 def cluster(sentences: list) -> list:
     
-
     if len(sentences) == 1:
         return [sentences]
-
 
     embeddings = model.encode(sentences)
 
@@ -92,9 +90,6 @@ def cluster(sentences: list) -> list:
     return list(clusters.values())
 
 
-
-
-
 def detectClaims(clusters: list) -> dict:
 
     client = OpenAI()
@@ -109,7 +104,6 @@ def detectClaims(clusters: list) -> dict:
             groupClusters[i] += clusters[i][j] + " "
         groupClusters[i] = groupClusters[i][:-1]
     text = text[:-1]
-
 
     system_prompt = """
     You are helping extract verifiable claims from social media videos.
@@ -146,7 +140,6 @@ def detectClaims(clusters: list) -> dict:
     The sentence(s) to analyze are: %s 
     """
 
-
     JSON = {}
 
     for i in range(len(groupClusters)):
@@ -170,6 +163,7 @@ def detectClaims(clusters: list) -> dict:
         JSON["Topic #" + str(i + 1)] = resJSON
 
     return JSON
+
 
 def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     googlecloud_api_key = os.getenv("GOOGLECLOUD_API_KEY")
@@ -216,7 +210,6 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     Here are the search results: %s 
     """
 
-
     for topic_key in JSON.keys():
         updatedClaims = []
         claim_id = 1
@@ -257,7 +250,6 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
             evInterp = json.loads(evInterpJSON)
 
-
             updatedClaim = {
                 "id": claim["id"],
                 "text": claim["text"],
@@ -274,15 +266,19 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
 
 def factChecker(link: str) -> dict:
-    path = download_audio(link)
-    transcription = transcribe(path) 
-    coref_ = coref(transcription)
-    corefSentences = splitSentences(coref_)
-    clusters = cluster(corefSentences)
-    claims = detectClaims(clusters)
-    verdict = searchAndAnalyzeEvidence(claims)
-    print(json.dumps(verdict, indent = 4))
-    os.remove(path)
+    if link in cache.keys():
+        verdict = cache[link]
+    else:
+        path = download_audio(link)
+        transcription = transcribe(path) 
+        coref_ = coref(transcription)
+        corefSentences = splitSentences(coref_)
+        clusters = cluster(corefSentences)
+        claims = detectClaims(clusters)
+        verdict = searchAndAnalyzeEvidence(claims)
+        print(json.dumps(verdict, indent = 4))
+        os.remove(path)
+        cache[link] = verdict
     return verdict
 
 

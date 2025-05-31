@@ -66,7 +66,6 @@ def splitSentences(coref: str) -> str:
     return sentences
 
     
-
 def cluster(sentences: list) -> list:
     
     if len(sentences) == 1:
@@ -119,14 +118,18 @@ def detectClaims(clusters: list) -> dict:
         - Personal anecdotes or private experiences unless it's a public figure making them. 
     4. No claim should be just a rephrasal of a previous claim.
     5. If a claim is exxagerated, rephrase is into a neutral, fact-checkable version.
-    6. Only include topics that contain at least one claim. Do not include any topic key if its "claims" list is empty.
+    6. For each factual claim rewrite it into a concise search engine query.
+        -Keep it neutral and focus on keywords that would yield relevant articles.
+        -Remove stopwords.
+        -Make the query a question. Do not remove any context from the original claim.
+    7. Only include topics that contain at least one claim. Do not include any topic key if its "claims" list is empty.
     
     Return the result in this JSON format:
     {
         "theme": "Short theme",
         "claims": [
-        { "id": 1, "text": claim 1 }, 
-        { "id": 2, "text": claim 2 },
+        { "id": 1, "text": claim 1, "query": query 1 }, 
+        { "id": 2, "text": claim 2, "query": query 2 },
         { etc... }
         ]
     }
@@ -187,20 +190,19 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     ]
 
     Your job:
-    1. Analyze whether the **claim is supported or contradicted** by the snippets.
+    1. Analyze whether the **claim is supported or contradicted** by the snippets. Perform calculations if needed.
     2. Make a decision based **only on the evidence provided** (do not guess beyond it).
     3. If some evidence clearly supports or refutes the claim, say so.
-    4. If snippets do not provide enough relevent or clear evidence, choose "Indecisive".
-
+    4. If snippets do not provide enough relevent or clear evidence, choose "Unclear".
 
     Return the result in this JSON format:
     {
-        "verdict": "True" | "Likely True" | "Likely False" | "False" | "Indecisive" | True (Outdated), // try not to output indecisive but do it if the claim is an opinion (ex: makes comments on what is fair or just) or there is not enough evidence.
+        "verdict": "True" (if claim is fully supported) | "Likely True" (if claim is mostly supported, but minor uncertainty) | "Likely False" (if claim is mostly unsupported or contradicted, but some element of truth) | "False" (if claim is clearly disproven) | "Unclear" (if claim is falls into none of the previous catgeories),
         "explanation": "A brief explanation of your reasoning. Try to use quotes and refer to sources by their name mentioning them. Do not mention the fact you are reading from sources/snippets/searches just say things as facts. Additionally if there is no relevent evidence simply say that.",
         "links": [
             "https://example.com/article1",
             "https://example.com/article2"
-        ] // Use links are related to the verdict even if it is indecisive. Try to output 3 links, it is OK to output less.
+        ] // Use links are related to the verdict even if it is Unclear. Try to output 3 links, it is OK to output less.
     }
     """
 
@@ -212,10 +214,11 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
     for topic_key in JSON.keys():
         updatedClaims = []
-        claim_id = 1
+
+
         for claim in JSON[topic_key]["claims"]:
 
-            search_query = claim["text"]
+            search_query = claim["query"]
 
             params = {
                 'q': search_query,
@@ -241,7 +244,7 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
                 model="gpt-4.1",
                 messages = [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt  % (search_query, evStr)}
+                    {"role": "user", "content": user_prompt  % (claim["text"], evStr)}
                 ],
                 response_format = {"type" : "json_object"}
             )
@@ -253,6 +256,7 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
             updatedClaim = {
                 "id": claim["id"],
                 "text": claim["text"],
+                "query": claim["query"],
                 "verdict" : evInterp["verdict"],
                 "explanation": evInterp["explanation"],
                 "links": evInterp["links"]

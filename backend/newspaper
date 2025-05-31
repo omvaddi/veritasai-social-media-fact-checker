@@ -1,0 +1,20 @@
+from newspaper import Article
+from openai import OpenAI
+
+
+article = Article("https://www.cnn.com/2025/05/30/politics/trump-taco-angry-tariff", browser_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+article.download()
+article.parse()
+print(article.text)
+
+client = OpenAI()
+
+system_prompt = "Summarize the following article into 5 main bullet points."
+
+response = client.chat.completions.create(
+    model="gpt-4.1",
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt  % (claim["text"], evStr)}
+    ],
+)

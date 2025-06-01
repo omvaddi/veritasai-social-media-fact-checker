@@ -50,6 +50,7 @@ function FactCheck() {
   }
 
   const useDummy = false;
+  const dummyLoading = false;
 
 
   const handleSubmit = async (e) => {
@@ -57,6 +58,10 @@ function FactCheck() {
     if (useDummy){
       setResult(dummyResult);
       setLoading(false)
+      return;
+    }
+    if (dummyLoading){
+      setLoading(true)
       return;
     }
     setLoading(true);
@@ -80,6 +85,7 @@ function FactCheck() {
       
       <div style={{ display: "flex", justifyContent: "center", marginTop: "2rem"}}>
         <form onSubmit={handleSubmit} className="search">
+      
           <input
             className="search-input"
             type="text"
@@ -89,7 +95,19 @@ function FactCheck() {
           />
         </form>
       </div>
-
+      {loading && (
+  
+        <div className="loading-container">
+          <p>Analyzing video, please wait...</p>
+          <div className="loading"></div>
+          <div className="loading"></div>
+          <div className="loading"></div>
+          <div className="loading"></div>
+          <div className="loading"></div>
+        </div>
+    
+      )}
+        
       {result && (
         <div className="results">   
           { Object.entries(result).map(([key, topic], i) => (
@@ -97,26 +115,36 @@ function FactCheck() {
               <h2> {topic.theme} </h2>
                 {topic.claims.map((claim, j) => (
                   <div key={j} className="claim">
-                    <p><strong>Claim:</strong> {claim.text}</p>
+                    <span className={claim.verdict}>{" "}
+                      {claim.verdict == "True" && "✅ "}
+                      {claim.verdict == "False" && "❌ "}
+                      {claim.verdict == "Likely True" && "🤔 "}
+                      {claim.verdict == "Likely False" && "⚠️ "}
+                      {claim.verdict == "Unclear" && "❓ "}
+                      {claim.text}
+                    </span>
                     <p><strong>Verdict:</strong> {claim.verdict}</p>
                     <p><strong>Explanation:</strong> {claim.explanation}</p>
                     <p className="links">
-                      <strong>Links: </strong>
-                      {claim.links.map((link, j) => (
-                        <a key={j} href={link} target="_blank" rel = "noopener noreferrer">
-                        [{ link }]
-                        </a>
+                      {claim.links.map((link, k) => (
+                          <a 
+                            key={k}
+                            href={link}
+                            target="_blank"
+                            rel = "noopener noreferrer"
+                            className = "link-badge"
+                            title={link}
+                          >
+                            {link}
+                          </a>
                       ))}
                     </p>
                   </div>
                 ))}
-              
             </div>
           ))}
         </div>
-      )
-    }
-
+      )}
     </div>
   )
 }

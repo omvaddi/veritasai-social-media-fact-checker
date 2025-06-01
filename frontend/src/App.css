@@ -1,3 +1,29 @@
+.links{
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+
+.link-badge {
+    background-color: #8593c9;
+    color: white;
+    border-radius: 0.75rem;
+    text-decoration: None;
+    padding: 0.25rem 0.6rem;
+    
+}
+
+
+.loading{
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 1.25rem;
+    font-family: 'Lexend';
+    color: #666;
+}
+
 h1{
     font-family: 'lexend', Arial, Helvetica, sans-serif;
     color: #8593c9;
@@ -5,18 +31,13 @@ h1{
     font-size: 4rem;
 }
 
-button:hover{
-    background-color: lightblue;
-}
-
 .search{
     --padding: 14px;
-
     width: max-content;
     display: flex;
     align-items: center;
     padding: var(--padding);
-    border-radius: 28px;
+    border-radius: 1.5rem;
     background: #f6f6f6;
     transition: box-shadow 0.25s;
 }
@@ -44,12 +65,14 @@ button:hover{
 .topic-card{
     margin-top: 2rem;
     padding: 1rem;
-    background-color: #f8f9fa;
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+    background-color: #f7fcfc;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.06);
     border-radius: 2rem;
+    border: 1px solid #e5e7eb
 }
 
 .results{
+    font-family: 'Lexend';
     margin-top: 1.5rem;
     display: flex;
     flex-direction: row;
@@ -63,6 +86,7 @@ button:hover{
     border-left: 5px solid #8593c9;
     margin-bottom: 1rem;
     transition: transform 0.4s ease;
+    
 }
 
 .claim:hover{
@@ -72,4 +96,70 @@ button:hover{
 .claim p{
     margin: 0.5rem 0;
     line-height: 1.8;
+}
+
+.loading{
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0.4rem;
+    animation: scaling 2.5s ease-in-out infinite;
+}
+
+.loading:nth-of-type(1){
+    animation-delay: 0.2s;
+}
+
+.loading:nth-of-type(2){
+    animation-delay: 0.4s;
+}
+
+.loading:nth-of-type(3){
+    animation-delay: 0.6s;
+}
+
+.loading:nth-of-type(4){
+    animation-delay: 0.8s;
+}
+
+.loading:nth-of-type(5){
+    animation-delay: 1s;
+}
+
+@keyframes scaling{
+    0%, 100%{
+        transform: scale(0.2);
+        background-color: #30FFb7;
+    }
+    40%{
+        transform: scale(1);
+        background-color: #07deff;
+    }
+    50%{
+        transform: scale(1);
+        background-color: #0761ff;
+    }
+}
+
+.loading-container{
+    text-align: center;
+    margin-top: 5rem;
+    font-family: 'Lexend';
+}
+
+.loading-container p {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.5px;
+    animation: fadeIn 0.7s ease-in
+}
+
+@keyframes fadeIn {
+    from{
+        opacity: 0;
+        transform: translateY(-10px);
+    }
 }

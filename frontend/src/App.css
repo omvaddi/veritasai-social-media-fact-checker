@@ -1,4 +1,7 @@
-
+.error{
+    text-align: center;
+    margin-top: 1rem;
+}
 .links{
     gap: 0.5rem;
     display: flex;

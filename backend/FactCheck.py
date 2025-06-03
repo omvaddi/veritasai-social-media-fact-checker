@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -286,6 +287,17 @@ def factChecker(link: str) -> dict:
         cache[link] = verdict
     return verdict
 
+def is_valid_url(link):
+    result = urlparse(link)
+    if not all([result.scheme in ('http', 'https'), result.netloc]):
+        return False
+    
+    try:
+        with yt_dlp.YoutubeDL({'quiet': True, 'skip_download': True}) as ydl:
+            ydl.extract_info(link, download=False)
+            return True
+    except Exception as e:
+        return False
 
 app = Flask(__name__)
 CORS(app)
@@ -294,6 +306,10 @@ CORS(app)
 def fact_check():
     data = request.get_json()
     link = data.get("video_url")
+    if not link or not is_valid_url(link):
+        print(link)
+        print(is_valid_url(link))
+        return jsonify({"error": "Invalid or missing video URL. Please try again."}), 400
     result = factChecker(link)
     return jsonify(result)
 

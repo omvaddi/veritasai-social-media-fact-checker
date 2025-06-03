@@ -6,6 +6,7 @@ function FactCheck() {
   const [videoURL, setVideoUrl] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null)
 
   const dummyResult = {
     "Topic #1": {
@@ -42,8 +43,14 @@ function FactCheck() {
   const useDummy = false;
   const dummyLoading = false;
 
+  
+  
 
   const handleSubmit = async (e) => {
+    
+    setResult(null);
+    setError(null);
+    setLoading(true)
     e.preventDefault()
     if (useDummy){
       setResult(dummyResult);
@@ -54,8 +61,7 @@ function FactCheck() {
       setLoading(true)
       return;
     }
-    setLoading(true);
-    setResult(null)
+
     const response = await fetch("http://localhost:5000/", {
       method: "POST",
       headers: {
@@ -65,6 +71,16 @@ function FactCheck() {
     });
 
     const json = await response.json();
+
+
+    
+    if(!response.ok){
+      setError(json.error || "Unknown error occured");
+      setLoading(false)
+      return;
+    }
+
+
     setResult(json)
     setLoading(false)
   }
@@ -97,7 +113,13 @@ function FactCheck() {
         </div>
     
       )}
-        
+
+      {error && (
+        <div className = "error">
+          {error}
+        </div>
+      )}
+
       {result && (
         <div className="results">   
           { Object.entries(result).map(([key, topic], i) => (

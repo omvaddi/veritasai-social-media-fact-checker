@@ -1,3 +1,4 @@
+
 .links{
     gap: 0.5rem;
     display: flex;
@@ -26,7 +27,7 @@
 
 h1{
     font-family: 'lexend', Arial, Helvetica, sans-serif;
-    color: #8593c9;
+    color: #003682;
     text-align: center;
     font-size: 4rem;
 }
@@ -68,7 +69,9 @@ h1{
     background-color: #f7fcfc;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.06);
     border-radius: 2rem;
-    border: 1px solid #e5e7eb
+    border: 1px solid #e5e7eb;
+    min-width: 1425px;
+
 }
 
 .results{

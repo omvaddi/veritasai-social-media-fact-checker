@@ -9,45 +9,35 @@ function FactCheck() {
 
   const dummyResult = {
     "Topic #1": {
-      theme: "COVID-19 Vaccines",
-      claims: [
-        {
-          id: 1,
-          text: "The Covid-19 Vaccines cause autism.",
-          verdict: "False",
-          explanation: "Not true lol",
-          links: [
-            "cdc.gov"
-          ]
-        }
-      ]
-    },
-    "Topic #2": {
-      theme: "American Airlines Explosions",
-      claims: [
-        {
-          id: 1,
-          text: "30 airplanes exploded in 2011",
-          verdict: "False",
-          explanation: "It was 31",
-          links: [
-            "youtube.com",
-            "gmail.com"
-          ]
-        },
-        {
-          id: 2,
-          text: "Airplanes are cool",
-          verdict: "True",
-          explanation: "I agree",
-          links: [
-            "youtube.com",
-            "gmail.com"
-          ]
-        }
-      ]
+        "theme": "Definitions of womanhood and gender participation in sports",
+        "claims": [
+            {
+                "id": 1,
+                "text": "A woman is somebody that can have a baby under certain circumstances.",
+                "query": "Can all women have babies under certain circumstances?",
+                "verdict": "Unclear",
+                "explanation": "There is no relevant evidence provided in these search results directly addressing or defining what a 'woman' is, nor whether the ability to have a baby is central to that definition. The snippets refer to topics such as breastfeeding, Medicaid benefits for pregnant women, and women's health rights, but none provide clear or direct support or contradiction for the claim that a woman is defined as somebody who can have a baby under certain circumstances.",
+                "links": [
+                    "https://www.cdc.gov/breastfeeding-special-circumstances/hcp/exposures/lead.html",
+                    "https://www.pa.gov/services/dhs/apply-for-medicaid-benefits.html",
+                    "https://www.dol.gov/general/topic/health-plans/cobra"
+                ]
+            },
+            {
+                "id": 2,
+                "text": "Men are able to play in women's sports in some cases.",
+                "query": "Are men able to compete in women's sports in some situations?",
+                "verdict": "Likely True",
+                "explanation": "There is evidence that, in certain cases, men (specifically transgender women, who were assigned male at birth but identify and compete as women) have been allowed to compete in women's sports. The snippet from 'Keeping Men Out of Women's Sports \u2013 The White House' directly states that 'athletic associations have allowed men to compete in women's sports.' The SF.gov article gives historical examples, citing 'many examples over the last several decades of transwomen competing in sports,' and names Renee Richards, a trans woman who competed in women's tennis. However, some of the most recent policies, such as the NCAA policy described, are making such participation more restrictive. Overall, there is clear evidence that in some circumstances, men (including trans women) have been able to participate in women's sports.",
+                "links": [
+                    "https://www.whitehouse.gov/presidential-actions/2025/02/keeping-men-out-of-womens-sports/",
+                    "https://www.sf.gov/trans-women-in-sports-facts-over-fear",
+                    "https://www.espn.com/espn/story/_/id/38209262/transgender-athlete-laws-state-legislation-science"
+                ]
+            }
+        ]
     }
-  }
+}
 
   const useDummy = false;
   const dummyLoading = false;
@@ -81,8 +71,8 @@ function FactCheck() {
 
   return (
     <div style = {{ padding: "2rem", fontFamily: 'Lexend'}} >
-      <h1>ClipCheck</h1>
-      
+      <h1>Veritas</h1>
+    
       <div style={{ display: "flex", justifyContent: "center", marginTop: "2rem"}}>
         <form onSubmit={handleSubmit} className="search">
       
@@ -114,15 +104,15 @@ function FactCheck() {
             <div className="topic-card" key={i}>
               <h2> {topic.theme} </h2>
                 {topic.claims.map((claim, j) => (
-                  <div key={j} className="claim">
-                    <span className={claim.verdict}>{" "}
+                  <details key={j} className="claim">
+                    <summary className={claim.verdict} style={{ cursor: "pointer"}}>
                       {claim.verdict == "True" && "✅ "}
                       {claim.verdict == "False" && "❌ "}
                       {claim.verdict == "Likely True" && "🤔 "}
                       {claim.verdict == "Likely False" && "⚠️ "}
                       {claim.verdict == "Unclear" && "❓ "}
                       {claim.text}
-                    </span>
+                    </summary>
                     <p><strong>Verdict:</strong> {claim.verdict}</p>
                     <p><strong>Explanation:</strong> {claim.explanation}</p>
                     <p className="links">
@@ -139,7 +129,7 @@ function FactCheck() {
                           </a>
                       ))}
                     </p>
-                  </div>
+                  </details>
                 ))}
             </div>
           ))}

@@ -122,6 +122,7 @@ def detectClaims(clusters: list) -> dict:
         -Keep it neutral and focus on keywords that would yield relevant articles.
         -Remove stopwords.
         -Make the query a question. Do not remove any context from the original claim.
+    7. Extract every claim that matches the requirements.
     7. Only include topics that contain at least one claim. Do not include any topic key if its "claims" list is empty.
     
     Return the result in this JSON format:
@@ -190,7 +191,7 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     ]
 
     Your job:
-    1. Analyze whether the **claim is supported or contradicted** by the snippets. Perform calculations if needed.
+    1. Analyze whether the **claim is supported or contradicted** by the snippets. If you can find only related evidence for numerical claims then perform calculations as needed.
     2. Make a decision based **only on the evidence provided** (do not guess beyond it).
     3. If some evidence clearly supports or refutes the claim, say so.
     4. If snippets do not provide enough relevent or clear evidence, choose "Unclear".

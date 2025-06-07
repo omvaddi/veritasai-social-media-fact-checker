@@ -32,12 +32,17 @@ def download_audio(url: str) -> str:
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(tmpdir, '%(title)s.%(ext)s'),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '0',
+        }]
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url)
         downloaded_path = ydl.prepare_filename(info)
-        return downloaded_path
+        return os.path.splitext(downloaded_path)[0] + ".wav"
 
 
 def transcribe(path: str) -> str:

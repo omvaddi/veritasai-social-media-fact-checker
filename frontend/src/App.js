@@ -50,7 +50,8 @@ function FactCheck() {
     
     setResult(null);
     setError(null);
-    setLoading(true)
+
+
     e.preventDefault()
     if (useDummy){
       setResult(dummyResult);
@@ -62,6 +63,8 @@ function FactCheck() {
       return;
     }
 
+    setLoading(true)
+
     const response = await fetch("http://localhost:5000/", {
       method: "POST",
       headers: {
@@ -71,6 +74,8 @@ function FactCheck() {
     });
 
     const json = await response.json();
+
+    
 
 
     

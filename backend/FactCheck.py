@@ -14,8 +14,23 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from urllib.parse import urlparse
+import logging
+import shutil
+
+
+logging.basicConfig(
+    filename='debug.log',
+    filemode='w',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
 
 load_dotenv()
+
+
+openai_api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=openai_api_key)
+
 
 tmpdir = tempfile.mkdtemp()
 nlp = spacy.load("en_core_web_sm")
@@ -46,7 +61,6 @@ def download_audio(url: str) -> str:
 
 
 def transcribe(path: str) -> str:
-    client = OpenAI()
 
     with open(path, "rb") as audio_file:
         transcription = client.audio.transcriptions.create(
@@ -83,21 +97,27 @@ def cluster(sentences: list) -> list:
 
     labels = clustering.fit_predict(embeddings)
     clusters = {}
+    noise = []
 
     if not any(label != -1 for label in labels):
         return [sentences]
 
     for claim, label in zip(sentences, labels):
         if label == -1:
-            continue
+            noise.append([claim])
         clusters.setdefault(label, []).append(claim)
 
-    return list(clusters.values())
+    result = list(clusters.values()) + noise
+    print(result)
+
+    print('\n\n\n')
+
+    print(noise)
+    return result
 
 
 def detectClaims(clusters: list) -> dict:
 
-    client = OpenAI()
 
     groupClusters = [""] * len(clusters)
 
@@ -115,33 +135,33 @@ def detectClaims(clusters: list) -> dict:
     I will give you the full transcipt for contextual purposes but just work with the sentences I want you to analyze.
     These sentences may not be coherent together but they all follow a theme.
 
-    For the sentence(s) provided, do the following:
-    1. Identify a **main theme**.
-    2. Extract any **claims that are verifiable by external sources** (e.g., studies, laws, statistics, expert consensus).
+    Instructions:
+    1. Identify a **main theme** of the sentence group.
+    2. Extract any **verifiable, specific, non-redundant factual claims**.
     3. Ignore: 
-        - Subjective opinions (e.g., what someone feels, prefers, or things is fair).
-        - Vague statements or advise without testable content.
-        - Personal anecdotes or private experiences unless it's a public figure making them. 
-    4. No claim should be just a rephrasal of a previous claim.
-    5. If a claim is exxagerated, rephrase is into a neutral, fact-checkable version.
-    6. For each factual claim rewrite it into a concise search engine query.
-        -Keep it neutral and focus on keywords that would yield relevant articles.
-        -Remove stopwords.
-        -Make the query a question. Do not remove any context from the original claim.
-    7. Extract every claim that matches the requirements.
-    7. Only include topics that contain at least one claim. Do not include any topic key if its "claims" list is empty.
+        - Subjective opinions (e.g., what someone feels, prefers, or thinks is fair)
+        - Vague or anecdotal statements including statements without context
+        - Private experiences (unless made by a public figure)
+        - Setnences without context or identifiable pronouns
+    4. Each claim must be **specific, concise**, and **not just a rewording of another**.
+    5. If a claim is exxagerated or speculative, rephrase it into a neutral, fact-checkable version.
+    6. For each claim, write a **searchable question** with:
+        - No stopwords
+        - Neutral tone
+        - Full relevent context
+        - Keywords useful for Google search
+        - Include a request for statistics or numerical data if relevent
     
     Return the result in this JSON format:
     {
         "theme": "Short theme",
         "claims": [
         { "id": 1, "text": claim 1, "query": query 1 }, 
-        { "id": 2, "text": claim 2, "query": query 2 },
-        { etc... }
+        ...
         ]
     }
 
-    If there are no fact-checkable claims, return exactly this: SKIP
+    If there are no claims, return exactly this: SKIP
     """
 
     user_prompt = """
@@ -181,35 +201,32 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
     url = 'https://www.googleapis.com/customsearch/v1'
 
-    client = OpenAI()
 
     system_prompt = """
-    You are an AI helping build a fact-checking tool.
-    You will be given:
-        - A claim
-        - A list of Google search result snippets in JSON format
+    You are an AI fact-checker. You will recieve:
+        - A factual claim
+        - A list of Google search result snippets (titles, links, snippets)
 
-    The search results will be given in a json format as follows:
-    [
-        { "Article #": 1, "title": Title of article #1, "link": Link to article #1, "snippet": Snippet of article #1 },
-        { "Article #": 2, "title": Title of article #2, "link": Link to article #2, "snippet": Snippet of article #2 },
-        { etc... }
-    ]
-
-    Your job:
-    1. Analyze whether the **claim is supported or contradicted** by the snippets. If you can find only related evidence for numerical claims then perform calculations as needed.
-    2. Make a decision based **only on the evidence provided** (do not guess beyond it).
-    3. If some evidence clearly supports or refutes the claim, say so.
-    4. If snippets do not provide enough relevent or clear evidence, choose "Unclear".
+    Your task:
+    1. Determine whether the **claim is supported or contradicted** by the snippets.
+    2. Base your judgement **primarily on the snippets** but you may make **basic, explicit inferences of simple calculations** when logically justified by the data.
+    3. Look for **consistent patterns** across multiple sources.
+    4. If the snippets do not supply clear or relevent evidence, return **"Insufficient Evidence"**
 
     Return the result in this JSON format:
     {
-        "verdict": "True" (if claim is fully supported) | "Likely True" (if claim is mostly supported, but minor uncertainty) | "Likely False" (if claim is mostly unsupported or contradicted, but some element of truth) | "False" (if claim is clearly disproven) | "Unclear" (if claim is falls into none of the previous catgeories),
+        "verdict": | "True" // fully supported
+                   | "Likely True" // mostly supported, minor uncertainty
+                   | "Likely False" // most contradicted, minor nuance
+                   | "False" // clearly disproven
+                   | "Insufficent Evidence" // not enought or too mixed
+                   ,
         "explanation": "A brief explanation of your reasoning. Try to use quotes and refer to sources by their name mentioning them. Do not mention the fact you are reading from sources/snippets/searches just say things as facts. Additionally if there is no relevent evidence simply say that.",
         "links": [
             "https://example.com/article1",
             "https://example.com/article2"
-        ] // Use links are related to the verdict even if it is Unclear. Try to output 3 links, it is OK to output less.
+            // up to three links that best illustrate your verdict
+        ]
     }
     """
 
@@ -219,7 +236,14 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
     Here are the search results: %s 
     """
 
-    for topic_key in JSON.keys():
+    topic_keys = list(JSON.keys())
+
+    for topic_key in topic_keys:
+        if not JSON[topic_key]["claims"]:
+            del JSON[topic_key]
+            continue
+
+
         updatedClaims = []
 
 
@@ -288,7 +312,7 @@ def factChecker(link: str) -> dict:
         claims = detectClaims(clusters)
         verdict = searchAndAnalyzeEvidence(claims)
         print(json.dumps(verdict, indent = 4))
-        os.remove(path)
+        shutil.rmtree(tmpdir)
         cache[link] = verdict
     return verdict
 

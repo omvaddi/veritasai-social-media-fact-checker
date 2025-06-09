@@ -137,7 +137,7 @@ function FactCheck() {
                       {claim.verdict == "False" && "❌ "}
                       {claim.verdict == "Likely True" && "🤔 "}
                       {claim.verdict == "Likely False" && "⚠️ "}
-                      {claim.verdict == "Unclear" && "❓ "}
+                      {claim.verdict == "Insufficient Evidence" && "❓ "}
                       {claim.text}
                     </summary>
                     <p><strong>Verdict:</strong> {claim.verdict}</p>

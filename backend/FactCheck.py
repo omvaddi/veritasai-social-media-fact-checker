@@ -7,6 +7,7 @@ from fastcoref import spacy_component
 import spacy
 from sentence_transformers import SentenceTransformer, util
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.preprocessing import normalize
 import hdbscan
 import requests
 from dotenv import load_dotenv
@@ -14,16 +15,12 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from urllib.parse import urlparse
-import logging
 import shutil
+from bertopic import BERTopic
+import umap
 
 
-logging.basicConfig(
-    filename='debug.log',
-    filemode='w',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-)
+
 
 load_dotenv()
 
@@ -92,27 +89,30 @@ def cluster(sentences: list) -> list:
         return [sentences]
 
     embeddings = model.encode(sentences)
+    embeddings = normalize(embeddings)
 
-    clustering = hdbscan.HDBSCAN(min_cluster_size=2, metric = 'euclidean')
 
-    labels = clustering.fit_predict(embeddings)
+    if len(sentences) < 10:
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, metric = 'euclidean')
+        labels = hdbscan_model.fit_predict(embeddings)
+    else:
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=1, prediction_data=True)
+        umap_model = umap.UMAP(n_neighbors=5, n_components=2, min_dist=0.0, metric='cosine')
+        topic_model = BERTopic(hdbscan_model=hdbscan_model, umap_model=umap_model, calculate_probabilities=True)
+    
+        labels, _ = topic_model.fit_transform(sentences)
+    
+
     clusters = {}
-    noise = []
-
-    if not any(label != -1 for label in labels):
-        return [sentences]
 
     for claim, label in zip(sentences, labels):
-        if label == -1:
-            noise.append([claim])
         clusters.setdefault(label, []).append(claim)
 
-    result = list(clusters.values()) + noise
+    result = list(clusters.values())
     print(result)
 
     print('\n\n\n')
 
-    print(noise)
     return result
 
 
@@ -136,13 +136,13 @@ def detectClaims(clusters: list) -> dict:
     These sentences may not be coherent together but they all follow a theme.
 
     Instructions:
-    1. Identify a **main theme** of the sentence group.
+    1. Identify a **specific main theme** of the sentence group.
     2. Extract any **verifiable, specific, non-redundant factual claims**.
     3. Ignore: 
         - Subjective opinions (e.g., what someone feels, prefers, or thinks is fair)
         - Vague or anecdotal statements including statements without context
         - Private experiences (unless made by a public figure)
-        - Setnences without context or identifiable pronouns
+        - Claims relying solely on visuals or unclear references
     4. Each claim must be **specific, concise**, and **not just a rewording of another**.
     5. If a claim is exxagerated or speculative, rephrase it into a neutral, fact-checkable version.
     6. For each claim, write a **searchable question** with:
@@ -219,12 +219,12 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
                    | "Likely True" // mostly supported, minor uncertainty
                    | "Likely False" // most contradicted, minor nuance
                    | "False" // clearly disproven
-                   | "Insufficent Evidence" // not enought or too mixed
+                   | "Insufficent Evidence" // not enough evidence or too mixed
                    ,
         "explanation": "A brief explanation of your reasoning. Try to use quotes and refer to sources by their name mentioning them. Do not mention the fact you are reading from sources/snippets/searches just say things as facts. Additionally if there is no relevent evidence simply say that.",
         "links": [
             "https://example.com/article1",
-            "https://example.com/article2"
+            ...
             // up to three links that best illustrate your verdict
         ]
     }
@@ -340,6 +340,8 @@ def fact_check():
         print(is_valid_url(link))
         return jsonify({"error": "Invalid or missing video URL. Please try again."}), 400
     result = factChecker(link)
+    if not result:
+        return jsonify({"message": "No verifiable claims found."})
     return jsonify(result)
 
 

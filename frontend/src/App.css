@@ -2,6 +2,13 @@
     text-align: center;
     margin-top: 1rem;
 }
+
+.message{
+    text-align: center;
+    margin-top: 3rem;
+    font-size: 5rem;
+}
+
 .links{
     gap: 0.5rem;
     display: flex;

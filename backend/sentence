@@ -1,27 +1,49 @@
 from sentence_transformers import SentenceTransformer, util
 from sklearn.cluster import AgglomerativeClustering
 import spacy
+from bertopic import BERTopic
+from sklearn.preprocessing import normalize
+from hdbscan import HDBSCAN
+import umap
 
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 nlp = spacy.load("en_core_web_sm")
 
-text = "Donald Trump increased his tarrifs. The tarrifs ruined the economy. Mr. Jones is good."
+text = "Donald Trump increased his tarrifs. The tarrifs ruined the economy. Mr. Jones is good. Everything is epic. Mr.Jones is my dad. Hello America how are you?. Today is the greatest day on Earth. I have 9 siblings."
 doc = nlp(text)
 
 sentences = [sent.text for sent in doc.sents]
-print(sentences)
 
-embeddings = model.encode(sentences)
 
-clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.5, metric='cosine', linkage='average')
+def cluster(sentences: list) -> list:
+    
+    if len(sentences) == 1:
+        return [sentences]
+    
+    embeddings = model.encode(sentences)
+    embeddings = normalize(embeddings)
+    
+    safe_neighbors = max(2, min(len(sentences) - 1, 5))
+    umap_model = umap.UMAP(n_neighbors=safe_neighbors, n_components=2, min_dist=0.0, metric='cosine')
 
-labels = clustering.fit_predict(embeddings)
-clusters = {}
+    hdbscan_model = HDBSCAN(min_cluster_size=2, min_samples=1 if len(sentences) <= 2 else 2)
 
-for sentence, label in zip(sentences, labels):
-    clusters.setdefault(label, []).append(sentence)
+    topic_model = BERTopic(umap_model=umap_model, hdbscan_model=hdbscan_model)
+    
 
-print(list(clusters.values()))
+
+
+    topics, _ = topic_model.fit_transform(sentences, embeddings)
+
+    clusters = {}
+    for claim, topic in zip(sentences, topics):
+        clusters.setdefault(topic, []).append(claim)
+
+    result = list(clusters.values())
+    print(result)
+
+cluster(sentences)
+
 

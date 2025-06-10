@@ -7,6 +7,7 @@ function FactCheck() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
 
   const dummyResult = {
     "Topic #1": {
@@ -50,6 +51,8 @@ function FactCheck() {
     
     setResult(null);
     setError(null);
+    setMessage(null)
+    setLoading(true)
 
 
     e.preventDefault()
@@ -63,7 +66,7 @@ function FactCheck() {
       return;
     }
 
-    setLoading(true)
+  
 
     const response = await fetch("http://localhost:5000/", {
       method: "POST",
@@ -76,11 +79,14 @@ function FactCheck() {
     const json = await response.json();
 
     
-
-
-    
     if(!response.ok){
       setError(json.error || "Unknown error occured");
+      setLoading(false)
+      return;
+    }
+
+    if(json.message === "No verifiable claims found."){
+      setMessage(json.message);
       setLoading(false)
       return;
     }
@@ -122,6 +128,12 @@ function FactCheck() {
       {error && (
         <div className = "error">
           {error}
+        </div>
+      )}
+
+      {message && (
+        <div className="message">
+          {message}
         </div>
       )}
 

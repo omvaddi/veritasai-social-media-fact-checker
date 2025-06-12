@@ -16,16 +16,13 @@
     gap: 1rem;
 }
 
-
 .link-badge {
     background-color: #8593c9;
     color: white;
     border-radius: 0.75rem;
     text-decoration: None;
     padding: 0.25rem 0.6rem;
-    
 }
-
 
 .loading{
     margin-top: 2rem;
@@ -55,7 +52,6 @@ h1{
 
 .search:focus-within{
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.75);
-
 }
 
 .search-input{
@@ -81,7 +77,6 @@ h1{
     border-radius: 2rem;
     border: 1px solid #e5e7eb;
     width: 98%
-
 }
 
 .results{
@@ -99,7 +94,6 @@ h1{
     border-left: 5px solid #8593c9;
     margin-bottom: 1rem;
     transition: transform 0.4s ease;
-    
 }
 
 .claim:hover{

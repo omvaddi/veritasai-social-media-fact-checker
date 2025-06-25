@@ -18,7 +18,7 @@ import shutil
 
 
 load_dotenv()
-tmpdir = tempfile.mkdtemp()
+
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
@@ -34,7 +34,7 @@ nlp.add_pipe(
 cache = {}
 
 
-def download_audio(url: str) -> str:
+def download_audio(url: str, tmpdir:str) -> str:
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': os.path.join(tmpdir, '%(title)s.%(ext)s'),
@@ -93,6 +93,8 @@ def cluster(sentences: list) -> list:
         clusters.setdefault(label, []).append(claim)
     result = list(clusters.values())
 
+    print(result)
+
     return result
 
 
@@ -108,16 +110,16 @@ def detectClaims(clusters: list) -> dict:
 
     system_prompt = """
     You are helping extract verifiable claims from social media videos.
-    I will give you the full transcipt for contextual purposes but just work with the sentences I want you to analyze.
+    I will give you the full transcript for contextual purposes but just work with the sentences I want you to analyze (the sentences may use every sentence in the full transcript).
     These sentences may not be coherent together but they all follow a theme. I will also give you previously used claims; do not create any claims that are almost identical.
 
     Instructions:
     1. Identify a **specific main theme** of the sentence group.
-    2. Extract any **verifiable, specific, non-redundant factual claims**.
+    2. Extract any and all **verifiable, specific, non-redundant factual claims**.
     3. Ignore: 
         - Subjective opinions (e.g., what someone feels, prefers, or thinks is fair)
         - Vague or anecdotal statements including statements without context
-        - The speaker's private experiences when the speaker is unknown
+        - Do NOT include the speaker's private/personal experiences when their name is unknown or their experience is unverifiable
         - Claims relying solely on visuals or unclear references
     4. Each claim must be **specific, concise**, and **not just a rewording of another**.
     5. If a claim is exxagerated or speculative, rephrase it into a neutral, fact-checkable version.
@@ -168,7 +170,6 @@ def detectClaims(clusters: list) -> dict:
         for claim in resJSON["claims"]:
             usedClaims += " " + claim["text"]
 
-        print(usedClaims)
         
         JSON["Topic #" + str(i + 1)] = resJSON
         
@@ -188,7 +189,7 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
     Your task:
     1. Determine whether the **claim is supported or contradicted** by the snippets.
-    2. Base your judgement **primarily on the snippets** but you may make **basic, explicit inferences of simple calculations** when logically justified by the data.
+    2. Base your judgement **primarily on the snippets** but you may make **basic, explicit inferences or simple calculations** as evidence when logically justified by the data.
     3. Look for **consistent patterns** across multiple sources.
 
     Return the result in this JSON format:
@@ -271,10 +272,11 @@ def searchAndAnalyzeEvidence(JSON: dict) -> dict:
 
 
 def factChecker(link: str) -> dict:
+    tmpdir = tempfile.mkdtemp()
     if link in cache.keys():
         verdict = cache[link]
     else:
-        path = download_audio(link)
+        path = download_audio(link, tmpdir)
         transcription = transcribe(path) 
         coref_ = coref(transcription)
         corefSentences = splitSentences(coref_)
@@ -289,6 +291,7 @@ def factChecker(link: str) -> dict:
 
 def is_valid_url(link):
     result = urlparse(link)
+
 
     if not all([result.scheme in ('http', 'https'), result.netloc]):
         return False
@@ -310,8 +313,6 @@ def fact_check():
     link = data.get("video_url")
 
     if not link or not is_valid_url(link):
-        print(link)
-        print(is_valid_url(link))
         return jsonify({"error": "Invalid or missing video URL. Please try again."}), 400
     
     result = factChecker(link)
